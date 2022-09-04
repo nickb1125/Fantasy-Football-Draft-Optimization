@@ -70,7 +70,7 @@ get_final_report <- function(player_sheet) {
     stat_bench_predicted_pt <- sum(stat_bench$fantasy_pt)
     add <- data.frame(team = team, starter_pred_pt = starter_predicted_pt, stat_bench_predicted_pt = stat_bench_predicted_pt) %>% 
       `colnames<-`(c('Team', 'Predict Starter Points', 'Predict Bench Points'))
-    report <- rbind(report, add)
+    report <- rbind(report, add)a
   }
   return(report)
 }

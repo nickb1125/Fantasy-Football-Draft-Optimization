@@ -10,7 +10,7 @@ library(gt)
 library(shiny)
 library(gtable)
 library(purrr)
-library(stringdist)
+library(stringdist) 
 
 scrape_old <- function(years) {
   first_year <- min(years)
