@@ -1,0 +1,111 @@
+---
+title: "draft"
+author: "Nick R. Bachelder"
+date: '2022-08-17'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(XML)
+library(RCurl)
+library(rlist)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(fuzzyjoin)
+library(gtExtras)
+library(gt)
+library(gtable)
+library(purrr)
+library(stringdist)
+```
+
+
+
+```{r}
+start_draft_auto <- function(player_sheet, teams = c('t10', 't9', 't8', 't7', 't6', 't5', 't4', 't3', 't2', 't1'), your_team = 't1') {
+  player_sheet <- player_sheet %>% arrange(adp) %>% 
+    rowwise() %>% mutate(adp_draw = rnorm(n = 1, mean = adp, sd = st_dev_adp)) %>% ungroup() ## adp draw with st. dev.
+  for (round_num in seq(0, 18)) {
+    draft_num <- 1
+    teams <- rev(teams)
+    print(paste('Start round', round_num))
+    for (team in teams) {
+      round_draft_num <- (round_num*10) + draft_num
+      player_sheet_available <- player_sheet %>% filter(is.na(status))
+      if (team == your_team) {
+        print(get_current_team(team, player_sheet))
+        choice <- get_pick_choices(player_sheet = player_sheet, draft_number = round_draft_num, team = team)
+        pick <- choice$id[1]
+      }
+      
+      if (team != your_team) {
+        # pick player with highest adp of needed players
+        
+        needed <- get_team_needs(team, player_sheet)
+        player_sheet_available_needed <- player_sheet_available %>% filter(pos %in% needed)
+        pick <- player_sheet_available_needed$id[player_sheet_available_needed$adp_draw == min(player_sheet_available_needed$adp_draw)][1]
+      }
+      
+      player_sheet <- update_player_sheet(player_sheet, pick, team, round_draft_num)
+      
+      player_pick <- player_sheet$player[player_sheet$id == pick][1]
+      print(paste(team, 'picks', player_pick, 'with pick', round_draft_num))
+  
+      draft_num <- draft_num + 1
+    }
+  }
+  return(get_final_report(player_sheet %>% filter(!is.na(status))))
+}
+
+
+
+get_final_report <- function(player_sheet) {
+  report <- data.frame(matrix(nrow = 0, ncol = 3)) %>% `colnames<-`(c('Team', 'Predict Starter Points', 'Predict Bench Points'))
+  for (team in unique(player_sheet$status)) {
+    stat_starter <- get_current_team(team, player_sheet) %>% filter(pos %in% c('qb1', 'rb1', 'rb2', 'wr1', 'wr2', 'wr_rb1', 'te1', 'dst', 'k')) 
+    stat_bench <- get_current_team(team, player_sheet) %>% filter(!(pos %in% c('qb1', 'rb1', 'rb2', 'wr1', 'wr2', 'wr_rb1', 'te1', 'dst', 'k')))
+    starter_predicted_pt <- sum(stat_starter$fantasy_pt)
+    stat_bench_predicted_pt <- sum(stat_bench$fantasy_pt)
+    add <- data.frame(team = team, starter_pred_pt = starter_predicted_pt, stat_bench_predicted_pt = stat_bench_predicted_pt) %>% 
+      `colnames<-`(c('Team', 'Predict Starter Points', 'Predict Bench Points'))
+    report <- rbind(report, add)
+  }
+  return(report)
+}
+
+
+
+
+```
+
+
+```{r}
+start_draft_auto(projected_use, your_team = 't2')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
